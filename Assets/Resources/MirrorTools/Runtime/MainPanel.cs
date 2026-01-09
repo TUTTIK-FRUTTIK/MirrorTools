@@ -1,7 +1,8 @@
-using System.Linq;
 using Mirror;
 using UnityEngine;
-using UnityEngine.Serialization;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
 
 namespace MirrorTools
 {
@@ -33,14 +34,10 @@ namespace MirrorTools
 
         private void Update()
         {
-            if (Input.GetKeyDown(config.activationKey))
-            {
-                panel.SetActive(!panel.activeSelf); 
-                SecurityManager.TryOpenAdminPanel(panel.activeSelf);
-
-                if (panel.activeSelf) MTools.onPanelActivate?.Invoke();
-                else MTools.onPanelDeactivate?.Invoke();
-            }
+            
+#if !UNITY_SERVER
+            if (ShortcutIsPressed()) ChangePanelState();
+#endif
 
             if (NetworkServer.active != prevServerActiveState)
             {
@@ -62,6 +59,36 @@ namespace MirrorTools
                 lastRequestTime = Time.time;
                 RequestData();
             }
+        }
+
+        private bool ShortcutIsPressed()
+        {
+            KeyCode[] keys = config.activationKeys;
+            
+#if !ENABLE_INPUT_SYSTEM
+            for (int i = 0; i < keys.Length-1; i++)
+            {
+                if (!Input.GetKey(keys[i])) return false;
+            }
+            
+            return Input.GetKeyDown(keys[^1]);
+#else
+            for (int i = 0; i < keys.Length-1; i++)
+            {
+                if (!Keyboard.current[keys[i].ConvertToKey()].isPressed) return false;
+            }
+
+            return Keyboard.current[keys[^1].ConvertToKey()].wasPressedThisFrame;
+#endif
+        }
+
+        private void ChangePanelState()
+        {
+            panel.SetActive(!panel.activeSelf); 
+            SecurityManager.TryOpenAdminPanel(panel.activeSelf);
+
+            if (panel.activeSelf) MTools.onPanelActivate?.Invoke();
+            else MTools.onPanelDeactivate?.Invoke();
         }
 
         private void OnDestroy()

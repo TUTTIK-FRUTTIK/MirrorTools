@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: MainConfig
   m_EditorClassIdentifier: Assembly-CSharp::MirrorTools.ConfigData
   showPanel: 1
-  activationKey: 96
+  activationKeys: 60000000
   password: 
   autoRequestInterval: 1

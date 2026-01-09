@@ -14,6 +14,7 @@ namespace  MirrorTools
         public static void RegisterServerHandlers()
         {
             NetworkServer.RegisterHandler<OpenAdminRequest>(OnOpenAdminRequest);
+            NetworkServer.OnDisconnectedEvent += OnClientDisconntected;
         }
         
         public static void RegisterClientHandlers()
@@ -24,6 +25,7 @@ namespace  MirrorTools
         public static void ResetServer()
         {
             NetworkServer.UnregisterHandler<OpenAdminRequest>();
+            NetworkServer.OnDisconnectedEvent -= OnClientDisconntected;
             authenticatedConnections.Clear();
         }
         
@@ -66,6 +68,11 @@ namespace  MirrorTools
                 MainPanel.singleton.interfaceLinker.infoPanel.SetActive(false);
                 isAuthenticated = false;
             }
+        }
+
+        private static void OnClientDisconntected(NetworkConnectionToClient conn)
+        {
+            if (authenticatedConnections.Contains(conn))  authenticatedConnections.Remove(conn);
         }
 
         public static void TryOpenAdminPanel(bool panelActive)

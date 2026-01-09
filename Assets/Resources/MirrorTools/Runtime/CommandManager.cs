@@ -2,7 +2,6 @@ using UnityEngine;
 using System;
 using System.Reflection;
 using System.Collections.Generic;
-using System.Collections;
 using System.Globalization;
 using System.Linq;
 using Mirror;
@@ -117,7 +116,7 @@ namespace MirrorTools
             }
             else
             {
-                foreach (var identity in NetworkServer.spawned.Values)
+                foreach (var identity in NetworkServer.spawned.Values.ToArray())
                 {
                     foreach (var netbehaviour in identity.NetworkBehaviours)
                     {

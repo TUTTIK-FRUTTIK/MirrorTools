@@ -18,12 +18,24 @@ namespace MirrorTools
         /// <summary>Displays a message to the command line.</summary>
         public static void ConsoleWrite(NetworkConnectionToClient conn, string message)
         {
+            if (conn == null)
+            {
+                Debug.LogError("NetworkConnectionToClient is null.");
+                return;
+            }
+            
             conn.Send(new ConsoleMessage { text = message });
         }
         
         /// <summary>Displays a message to the command line.</summary>
         public static void ConsoleWrite(NetworkConnectionToClient conn, string message, Color color)
         {
+            if (conn == null)
+            {
+                Debug.LogError("NetworkConnectionToClient is null.");
+                return;
+            }
+            
             string hexRGB = ColorUtility.ToHtmlStringRGB(color);
             conn.Send(new ConsoleMessage { text = $"<color=#{hexRGB}>{message}<color=white>" });
         }
