@@ -99,7 +99,7 @@ namespace MirrorTools
 
         public void RequestData()
         {
-            if (!NetworkClient.isConnected) return;
+            if (!NetworkClient.isConnected || !panel.activeSelf) return;
             if (interfaceLinker.generalView.gameObject.activeSelf) GeneralManager.RequestGeneralInfo();
             else if (interfaceLinker.playersView.gameObject.activeSelf) PlayersManager.RequestPlayersInfo();
             else if (interfaceLinker.netidentitiesView.gameObject.activeSelf) NetidentitiesManager.RequestIdentitiesInfo();

@@ -9,7 +9,11 @@ namespace MirrorTools
 
         public void UpdateGeneralInfo(GeneralInfoResponse response)
         {
-            string text = $"connection count: {response.connectionCount}/{response.maxConnectionCount} \nplayer count: {response.playerCount} \nnetwork object count: {response.netObjectCount} \nmain object count: {response.mainObjectCount} \nmemory usage: {response.memoryUsage:F1}GB/{response.totalMemory:F1}GB \ncurrent fps: {response.fps}";
+            string traffic = response.incomingTraffic == -1
+                ? "(Traffic data is available only when the NetworkManager has NetworkStatistics component)"
+                : $"outgoing traffic: {Mirror.Utils.PrettyBytes(response.outgoingTraffic)} \nincoming traffic: {Mirror.Utils.PrettyBytes(response.incomingTraffic)}";
+            
+            string text = $"uptime: {Mirror.Utils.PrettySeconds(response.uptime)} \nconnection count: {response.connectionCount}/{response.maxConnectionCount} \nplayer count: {response.playerCount} \nnetwork object count: {response.netObjectCount} \nmain object count: {response.mainObjectCount} \nmemory usage: {response.memoryUsage:F1}GB/{response.totalMemory:F1}GB \ntickrate: {response.actualTickrate} Hz / {response.tickrate} Hz \n{traffic}";
             generalText.text = text;
         }
     }

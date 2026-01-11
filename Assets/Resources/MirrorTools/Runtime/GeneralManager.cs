@@ -1,13 +1,12 @@
 using Mirror;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using System.Diagnostics;
 
 namespace MirrorTools
 {
     public static class GeneralManager
     {
-        private static Process currentProcess;
+        private static NetworkStatistics networkStatistics;
         
         public static void RegisterClientHandlers()
         {
@@ -17,7 +16,12 @@ namespace MirrorTools
         public static void RegisterServerHandlers()
         {
             NetworkServer.RegisterHandler<GeneralInfoRequest>(OnGeneralInfoRequest);
-            currentProcess = Process.GetCurrentProcess();
+
+            if (NetworkManager.singleton.TryGetComponent(out NetworkStatistics stats))
+            {
+                networkStatistics = stats;
+                stats.enabled = false;
+            }
         }
         
         public static void ResetClient()
@@ -38,6 +42,8 @@ namespace MirrorTools
         private static void OnGeneralInfoRequest(NetworkConnectionToClient conn, GeneralInfoRequest request)
         {
             if (!SecurityManager.IsAuthenticated(conn)) return;
+
+            bool hasStats = networkStatistics != null;
             
             GeneralInfoResponse response = new GeneralInfoResponse()
             {
@@ -46,9 +52,13 @@ namespace MirrorTools
                 playerCount = NetworkManager.singleton.numPlayers,
                 netObjectCount = NetworkServer.spawned.Count,
                 mainObjectCount = SceneManager.GetActiveScene().rootCount,
-                fps = (int)(1f / Time.unscaledDeltaTime),
+                actualTickrate = NetworkServer.actualTickRate,
+                tickrate = NetworkServer.tickRate,
                 memoryUsage = (long)(UnityEngine.Profiling.Profiler.GetTotalAllocatedMemoryLong() / 1048576L) / 1024f,
-                totalMemory = SystemInfo.systemMemorySize / 1024f
+                totalMemory = SystemInfo.systemMemorySize / 1024f,
+                uptime = NetworkTime.time,
+                outgoingTraffic = hasStats ? networkStatistics.serverSentBytesPerSecond : -1,
+                incomingTraffic = hasStats ? networkStatistics.serverReceivedBytesPerSecond : -1,
             };
             
             conn.Send(response);
@@ -69,9 +79,13 @@ namespace MirrorTools
         public int playerCount;
         public int netObjectCount;
         public int mainObjectCount;
-        public int fps;
+        public int actualTickrate;
+        public int tickrate;
         public float memoryUsage;
         public float totalMemory;
+        public double uptime;
+        public long outgoingTraffic;
+        public long incomingTraffic;
     }
 }
 
