@@ -36,12 +36,13 @@ After the client enters the correct password, it will be saved in the client's l
 
 All the indicators are described here and what they mean.
 
+* Uptime - time elapsed since the start of the server startup.
 * Connection count - the number of currently connected users out of the maximum available number (which is specified in NetworkManager.maxConnections).
 * Player Count - The number of connected users who currently have an active network object.
 * Network object count - the number of Network Identities on the scene.
 * Main object count - number of objects on the stage (not counting children).
 * Memory usage - the amount of RAM that Unity Application uses out of all available RAM on the computer.
-* Current FPS - the current number of FPS on the server.
+* Tickrate - actual tickrate (current fps on server) and sendrate is set in NetworkManager settings.
 
 #### Players module
 
