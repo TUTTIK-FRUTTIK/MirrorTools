@@ -1,4 +1,4 @@
-using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
@@ -32,6 +32,18 @@ namespace MirrorTools
         private void OnInputChanged(string input)
         {
             placeHolder.text = CommandManager.GetSuggestion(input);
+            MainPanel.singleton.StartCoroutine(CheckOnIncorrectInput(input));
+        }
+
+        IEnumerator CheckOnIncorrectInput(string input)
+        {
+            yield return new WaitForEndOfFrame();
+            
+            if (!MTools.panelIsActive)
+            {
+                yield return new WaitUntil(() => MTools.panelIsActive);
+                inputField.text = inputField.text.Remove(inputField.text.Length - 1);
+            }
         }
 
         private void Update()
