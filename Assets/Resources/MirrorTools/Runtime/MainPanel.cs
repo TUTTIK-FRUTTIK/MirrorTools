@@ -30,6 +30,7 @@ namespace MirrorTools
             panel = transform.GetChild(0).gameObject;
             interfaceLinker = transform.GetChild(0).GetComponent<InterfaceLinker>();
             interfaceLinker.gameObject.SetActive(false);
+            InitializeButtons();
         }
 
         private void Update()
@@ -61,6 +62,15 @@ namespace MirrorTools
             }
         }
 
+        private void InitializeButtons()
+        {
+            if (!config.enabledModules.HasFlag(PanelModule.General)) interfaceLinker.moduleButtons[0].SetActive(false);
+            if (!config.enabledModules.HasFlag(PanelModule.Players)) interfaceLinker.moduleButtons[1].SetActive(false);
+            if (!config.enabledModules.HasFlag(PanelModule.Netidentities)) interfaceLinker.moduleButtons[2].SetActive(false);
+            if (!config.enabledModules.HasFlag(PanelModule.Logs)) interfaceLinker.moduleButtons[3].SetActive(false);
+            if (!config.enabledModules.HasFlag(PanelModule.Console)) interfaceLinker.moduleButtons[4].SetActive(false);
+        }
+        
         private bool ShortcutIsPressed()
         {
             KeyCode[] keys = config.activationKeys;

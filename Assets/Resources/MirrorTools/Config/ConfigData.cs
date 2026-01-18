@@ -18,5 +18,8 @@ namespace MirrorTools
 
         [Tooltip("The time between the client's requests. In seconds.")] [Min(0.1f)]
         public float autoRequestInterval = 1f;
+
+        [Tooltip("Modules that will be available in runtime.")]
+        public PanelModule enabledModules = (PanelModule)~0;
     }
 }

@@ -16,3 +16,4 @@ MonoBehaviour:
   activationKeys: 60000000
   password: 
   autoRequestInterval: 1
+  enabledModules: -1

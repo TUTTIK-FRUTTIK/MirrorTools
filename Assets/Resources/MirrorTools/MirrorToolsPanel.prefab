@@ -5881,6 +5881,12 @@ MonoBehaviour:
   logView: {fileID: 229994193964722321}
   commandPanel: {fileID: 8529512153027790239}
   infoPanel: {fileID: 238419539185976176}
+  moduleButtons:
+  - {fileID: 4067360908529849588}
+  - {fileID: 3891048366546914116}
+  - {fileID: 5599451951249593774}
+  - {fileID: 9037782391277589955}
+  - {fileID: 7515460183845200168}
 --- !u!1 &8977613616234915154
 GameObject:
   m_ObjectHideFlags: 0
