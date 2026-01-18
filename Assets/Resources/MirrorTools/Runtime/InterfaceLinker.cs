@@ -12,5 +12,6 @@ namespace MirrorTools
         public CommandPanel commandPanel;
         public GameObject infoPanel;
         public GameObject[] moduleButtons;
+        public GameObject[] modulePanels;
     }
 }

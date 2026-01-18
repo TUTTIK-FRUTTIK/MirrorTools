@@ -16,6 +16,7 @@ namespace MirrorTools
         private bool prevClientActiveState;
         private bool prevServerActiveState;
         private float lastRequestTime;
+        private int prevPanelIndex;
 
         private void Awake()
         {
@@ -31,6 +32,7 @@ namespace MirrorTools
             interfaceLinker = transform.GetChild(0).GetComponent<InterfaceLinker>();
             interfaceLinker.gameObject.SetActive(false);
             InitializeButtons();
+            OpenLastPanel();
         }
 
         private void Update()
@@ -70,6 +72,17 @@ namespace MirrorTools
             if (!config.enabledModules.HasFlag(PanelModule.Logs)) interfaceLinker.moduleButtons[3].SetActive(false);
             if (!config.enabledModules.HasFlag(PanelModule.Console)) interfaceLinker.moduleButtons[4].SetActive(false);
         }
+
+        private void OpenLastPanel()
+        {
+            if (!PlayerPrefs.HasKey("LastOpenedPanel"))
+            {
+                OpenPanel(0);
+                return;
+            }
+            
+            OpenPanel(PlayerPrefs.GetInt("LastOpenedPanel"));
+        }
         
         private bool ShortcutIsPressed()
         {
@@ -105,6 +118,14 @@ namespace MirrorTools
         {
             if (NetworkServer.active) Init.ResetServer();
             if (NetworkClient.active) Init.ResetClient();
+        }
+
+        public void OpenPanel(int index)
+        {
+            interfaceLinker.modulePanels[prevPanelIndex].SetActive(false);
+            interfaceLinker.modulePanels[index].SetActive(true);
+            prevPanelIndex = index;
+            PlayerPrefs.SetInt("LastOpenedPanel", index);
         }
 
         public void RequestData()
