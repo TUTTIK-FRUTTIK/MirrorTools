@@ -13,7 +13,7 @@ namespace MirrorTools
         public static Action onPanelDeactivate;
         
         /// <summary>Current state of the MirrorTools panel.</summary>
-        public static bool panelIsActive => MainPanel.singleton.panel.activeSelf;
+        public static bool panelIsActive => MainPanel.singleton.panel.gameObject.activeSelf;
         
         /// <summary>Displays a message to the command line.</summary>
         public static void ConsoleWrite(NetworkConnectionToClient conn, string message)

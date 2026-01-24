@@ -10,13 +10,15 @@ namespace MirrorTools
     {
         public ConfigData config;
         public static MainPanel singleton;
-        [HideInInspector] public GameObject panel;
+        [HideInInspector] public RectTransform panel;
         [HideInInspector] public InterfaceLinker interfaceLinker;
 
+        private UIDragHandler dragHandler;
         private bool prevClientActiveState;
         private bool prevServerActiveState;
         private float lastRequestTime;
         private int prevPanelIndex;
+        private bool windowMaximized;
 
         private void Awake()
         {
@@ -28,9 +30,11 @@ namespace MirrorTools
             }
 
             DontDestroyOnLoad(gameObject);
-            panel = transform.GetChild(0).gameObject;
+            panel = transform.GetChild(0).gameObject.GetComponent<RectTransform>();
             interfaceLinker = transform.GetChild(0).GetComponent<InterfaceLinker>();
+            dragHandler = GetComponent<UIDragHandler>();
             interfaceLinker.gameObject.SetActive(false);
+            InitializeWindow();
             InitializeButtons();
             OpenLastPanel();
         }
@@ -73,6 +77,23 @@ namespace MirrorTools
             if (!config.enabledModules.HasFlag(PanelModule.Console)) interfaceLinker.moduleButtons[4].SetActive(false);
         }
 
+        private void InitializeWindow()
+        {
+            if (!PlayerPrefs.HasKey("WindowMaximized")) PlayerPrefs.SetString("WindowMaximized", "0");
+            if (!PlayerPrefs.HasKey("WindowPositionX")) PlayerPrefs.SetFloat("WindowPositionX", 0f);
+            if (!PlayerPrefs.HasKey("WindowPositionY")) PlayerPrefs.SetFloat("WindowPositionY", 0f);
+            PlayerPrefs.Save();
+            
+            windowMaximized = PlayerPrefs.GetString("WindowMaximized") == "1";
+            
+            float x = PlayerPrefs.GetFloat("WindowPositionX");
+            float y = PlayerPrefs.GetFloat("WindowPositionY");
+            panel.anchoredPosition = new Vector2(x, y);
+            dragHandler.lastAnchoredPosition = new Vector2(x, y);
+
+            ConfigureWindowSize();
+        }
+
         private void OpenLastPanel()
         {
             if (!PlayerPrefs.HasKey("LastOpenedPanel"))
@@ -105,12 +126,12 @@ namespace MirrorTools
 #endif
         }
 
-        private void ChangePanelState()
+        public void ChangePanelState()
         {
-            panel.SetActive(!panel.activeSelf); 
-            SecurityManager.TryOpenAdminPanel(panel.activeSelf);
+            panel.gameObject.SetActive(!panel.gameObject.activeSelf); 
+            SecurityManager.TryOpenAdminPanel(panel.gameObject.activeSelf);
 
-            if (panel.activeSelf) MTools.onPanelActivate?.Invoke();
+            if (panel.gameObject.activeSelf) MTools.onPanelActivate?.Invoke();
             else MTools.onPanelDeactivate?.Invoke();
         }
 
@@ -128,9 +149,43 @@ namespace MirrorTools
             PlayerPrefs.SetInt("LastOpenedPanel", index);
         }
 
+        public void ChangeMaximizeWindowState()
+        {
+            windowMaximized = !windowMaximized;
+            PlayerPrefs.SetString("WindowMaximized", windowMaximized ?  "1" : "0");
+            PlayerPrefs.Save();
+            
+            ConfigureWindowSize();
+        }
+
+        private void ConfigureWindowSize()
+        {
+            if (windowMaximized)
+            {
+                panel.anchorMin = new Vector2(0, 0);
+                panel.anchorMax = new Vector2(1, 1);
+
+                panel.offsetMin = Vector2.zero;
+                panel.offsetMax = Vector2.zero;
+
+                panel.pivot = new Vector2(0.5f, 0.5f);
+            }
+            else
+            {
+                panel.anchoredPosition = dragHandler.lastAnchoredPosition;
+                panel.anchorMin = new Vector2(0.5f, 0.5f);
+                panel.anchorMax = new Vector2(0.5f, 0.5f);
+                panel.pivot = new Vector2(0.5f, 0.5f);
+                panel.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, 1400);
+                panel.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, 750);
+            }
+            
+            dragHandler.canBeMoved = !windowMaximized;
+        }
+
         public void RequestData()
         {
-            if (!NetworkClient.isConnected || !panel.activeSelf) return;
+            if (!NetworkClient.isConnected || !panel.gameObject.activeSelf) return;
             if (interfaceLinker.generalView.gameObject.activeSelf) GeneralManager.RequestGeneralInfo();
             else if (interfaceLinker.playersView.gameObject.activeSelf) PlayersManager.RequestPlayersInfo();
             else if (interfaceLinker.netidentitiesView.gameObject.activeSelf) NetidentitiesManager.RequestIdentitiesInfo();
