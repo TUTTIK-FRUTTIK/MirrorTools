@@ -8,9 +8,17 @@ namespace MirrorTools
     {
         public TextMeshProUGUI identitiesText;
 
-        public void UpdateIdentitiesList(string text)
+        public void UpdateIdentitiesList(string[] names)
         {
-            identitiesText.text = text;
+            string identitiesList = $"({names.Length} net identities)\n";
+            int identityCount = 1;
+
+            foreach (string name in names)
+            {
+                identitiesList += $"{identityCount++}. {name}\n";
+            }
+            
+            identitiesText.text = identitiesList;
         }
     }
 }

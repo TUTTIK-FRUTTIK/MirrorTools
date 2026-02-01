@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Mirror;
 using TMPro;
 using UnityEngine;
 #if ENABLE_INPUT_SYSTEM
@@ -14,6 +15,8 @@ namespace MirrorTools
         public TextMeshProUGUI consoleText;
         public TMP_InputField inputField;
         public TextMeshProUGUI placeHolder;
+        public TextMeshProUGUI spacingText;
+        public SuggestionPanel suggestionPanel;
         private List<string> commandHistory = new List<string>();
         private int currentCommandIndex;
 
@@ -27,12 +30,56 @@ namespace MirrorTools
             }
             
             inputField.onValueChanged.AddListener(OnInputChanged);
+            NetidentitiesManager.onIdentitiesInfoResponse += OnNetIdentitiesResponse;
+
+            suggestionPanel.Initialize();
+        }
+
+        private void OnDestroy()
+        {
+            NetidentitiesManager.onIdentitiesInfoResponse -= OnNetIdentitiesResponse;
         }
 
         private void OnInputChanged(string input)
         {
-            placeHolder.text = CommandManager.GetSuggestion(input);
+            string[] suggestions = CommandManager.GetListSuggestions(input, suggestionPanel.elementsCount);
+            if (suggestions != null)
+            {
+                spacingText.text = CommandManager.RemoveLastPart(input).Replace(" ", "/");
+                suggestionPanel.gameObject.SetActive(true);
+                suggestionPanel.SetNewList(suggestions);
+                placeHolder.text = CommandManager.RemoveLastPart(input) + suggestionPanel.GetCurrentSuggestion();
+            }
+            else
+            {
+                suggestionPanel.gameObject.SetActive(false);
+                placeHolder.text = "";
+            }
+            
             MainPanel.singleton.StartCoroutine(CheckOnIncorrectInput(input));
+        }
+
+        [ConsoleCommand("test1")]
+        public static void Test1(NetworkConnectionToClient sender, bool boolean) {MTools.ConsoleWrite(sender, boolean.ToString());}
+        
+        [ConsoleCommand("test2")]
+        public static void Test2() {}
+        
+        [ConsoleCommand("test3")]
+        public static void Test3() {}
+        
+        [ConsoleCommand("te")]
+        public static void Te() {}
+        
+        [ConsoleCommand("try_test")]
+        public static void TryTest() {}
+
+        private void OnNetIdentitiesResponse()
+        {
+            if (!gameObject.activeSelf) return;
+            
+            // вызов CommandManager.GetListSuggestion()
+            //foreach(var name in NetidentitiesManager.netIdentities) Debug.Log(name);
         }
 
         IEnumerator CheckOnIncorrectInput(string input)
@@ -55,10 +102,10 @@ namespace MirrorTools
                 EnterText();
             
             if (Keyboard.current.backspaceKey.wasReleasedThisFrame) currentCommandIndex = 0;
-            
-            if (Keyboard.current.upArrowKey.wasPressedThisFrame) OpenHistoryCommand(true);
-            
-            if (Keyboard.current.downArrowKey.wasPressedThisFrame) OpenHistoryCommand(false);
+
+            if (Keyboard.current.upArrowKey.wasPressedThisFrame) OnUpArrowPressed();
+
+            if (Keyboard.current.downArrowKey.wasPressedThisFrame) OnDownArrowPressed();
             
             if (Keyboard.current.tabKey.wasPressedThisFrame && !string.IsNullOrEmpty(placeHolder.text))
             {
@@ -69,10 +116,10 @@ namespace MirrorTools
             if (Input.GetKeyDown(KeyCode.Return)) EnterText();
             
             if (Input.GetKeyDown(KeyCode.Backspace)) currentCommandIndex = 0;
-            
-            if (Input.GetKeyDown(KeyCode.UpArrow)) OpenHistoryCommand(true);
 
-            if (Input.GetKeyDown(KeyCode.DownArrow)) OpenHistoryCommand(false);
+            if (Input.GetKeyDown(KeyCode.UpArrow)) OnUpArrowPressed();
+
+            if (Input.GetKeyDown(KeyCode.DownArrow)) OnDownArrowPressed();
             
             if (Input.GetKeyDown(KeyCode.Tab) && !string.IsNullOrEmpty(placeHolder.text))
             {
@@ -80,6 +127,28 @@ namespace MirrorTools
                 inputField.caretPosition = inputField.text.Length;
             }
 #endif
+        }
+
+        private void OnUpArrowPressed()
+        {
+            if (suggestionPanel.gameObject.activeSelf)
+            {
+                suggestionPanel.NextSuggestion();
+                placeHolder.text = suggestionPanel.GetCurrentSuggestion();
+                inputField.caretPosition = inputField.text.Length;
+            }
+            else OpenHistoryCommand(true);
+        }
+
+        private void OnDownArrowPressed()
+        {
+            if (suggestionPanel.gameObject.activeSelf)
+            {
+                suggestionPanel.PreviousSuggestion();
+                placeHolder.text = suggestionPanel.GetCurrentSuggestion();
+                inputField.caretPosition = inputField.text.Length;
+            }
+            else OpenHistoryCommand(false);
         }
 
         private void EnterText()

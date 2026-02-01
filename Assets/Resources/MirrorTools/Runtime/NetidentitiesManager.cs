@@ -1,10 +1,15 @@
+using System;
+using System.Linq;
 using UnityEngine;
 using Mirror;
 
 namespace MirrorTools
 {
-    public class NetidentitiesManager : MonoBehaviour
+    public static class NetidentitiesManager
     {
+        public static Action onIdentitiesInfoResponse;
+        public static string[] netIdentities;
+        
         public static void RegisterClientHandlers()
         {
             NetworkClient.RegisterHandler<IdentitiesInfoResponse>(OnIdentitiesInfoResponse);
@@ -18,6 +23,7 @@ namespace MirrorTools
         public static void ResetClient()
         {
             NetworkClient.UnregisterHandler<IdentitiesInfoResponse>();
+            netIdentities = null;
         }
 
         public static void ResetServer()
@@ -28,20 +34,16 @@ namespace MirrorTools
         private static void OnIdentitiesInfoRequest(NetworkConnectionToClient conn, IdentitiesInfoRequest request)
         {
             if (!SecurityManager.IsAuthenticated(conn)) return;
-
-            string identitiesList = $"({NetworkServer.spawned.Count} net identities)\n";
-            int identityCount = 1;
-
-            foreach (NetworkIdentity identity in NetworkServer.spawned.Values)
-            {
-                identitiesList += $"{identityCount++}. {identity.name}\n";
-            }
             
-            conn.Send(new IdentitiesInfoResponse() { indentitiesInfo = identitiesList });
+            string[] names = NetworkServer.spawned.Select(go => go.Value.name).ToArray();
+            
+            conn.Send(new IdentitiesInfoResponse() { indentitiesInfo = names });
         }
 
         private static void OnIdentitiesInfoResponse(IdentitiesInfoResponse response)
         {
+            netIdentities = response.indentitiesInfo;
+            onIdentitiesInfoResponse?.Invoke();
             MainPanel.singleton.interfaceLinker.netidentitiesView.UpdateIdentitiesList(response.indentitiesInfo);
         }
 
@@ -53,7 +55,7 @@ namespace MirrorTools
     
     public struct IdentitiesInfoResponse : NetworkMessage
     {
-        public string indentitiesInfo;
+        public string[] indentitiesInfo;
     }
 
     public struct IdentitiesInfoRequest : NetworkMessage { }

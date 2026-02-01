@@ -52,6 +52,7 @@ namespace MirrorTools
                     {
                         RegisterCommandsInType(type);
                     }
+                    commands = commands.OrderBy(x => x.Key).ToDictionary(x => x.Key, x => x.Value);
                 }
                 catch (System.Exception ex)
                 {
@@ -310,7 +311,7 @@ namespace MirrorTools
             return false;
         }
 
-        [ConsoleCommand("help", "displays the available commands.")]
+        [ConsoleCommand("help", "displays the list of available commands.")]
         private static void HelpCommand(NetworkConnectionToClient sender)
         {
             string commandList = "";
@@ -335,6 +336,58 @@ namespace MirrorTools
             MainPanel.singleton.interfaceLinker.commandPanel.AddTextToConsole(message.text);
         }
 
+        public static string RemoveLastPart(string input)
+        {
+            if (input[^1] == ' ') return input;
+            
+            string[] parts = SplitString(input);
+            return input.Remove(input.Length - parts[^1].Length);
+        }
+
+        public static string[] GetListSuggestions(string input, int maxCount)
+        {
+            if (string.IsNullOrEmpty(input)) return null;
+            
+            string[] parts = SplitString(input);
+            
+            if (parts.Length == 1 && input[^1] != ' ')
+            {
+                var matches = commands.Keys.Where(cmd => cmd.StartsWith(input)).Reverse().ToList();
+                if (matches.Count > 0)
+                {
+                    int range = matches.Count < maxCount ? matches.Count : maxCount;
+                    return matches.GetRange(0, range).ToArray();
+                }
+                else return null;
+            }
+            else if (parts.Length > 0)
+            {
+                if (!commands.ContainsKey(parts[0])) return null;
+                
+                ParameterInfo[] parameters = commands[parts[0]].methodInfo.GetParameters();
+                bool hasSenderParameter = MethodHasSenderParameter(parameters, out int index);
+                int parametersCount = hasSenderParameter ? parameters.Length - 1 : parameters.Length;
+                Debug.Log(parametersCount.ToString());
+                if (parametersCount > 0)
+                {
+                    int offset = hasSenderParameter && parts.Length > index ? 0 : 1;
+                        
+                    ParameterInfo parameter = parameters[parts.Length - offset];
+                    
+                    Debug.Log(parameter.ParameterType.ToString());
+
+                    if (parameter.ParameterType == typeof(bool)) return new string[] { "false", "true" };
+                        
+                    if (parameter.ParameterType == typeof(NetworkConnectionToClient)) PlayersManager.RequestPlayersInfo();
+                    else if (parameter.ParameterType == typeof(NetworkIdentity)) NetidentitiesManager.RequestIdentitiesInfo();
+
+                    return null;
+                }
+            }
+
+            return null;
+        }
+
         public static string GetSuggestion(string input)
         {
             if (string.IsNullOrEmpty(input)) return string.Empty;
@@ -357,7 +410,10 @@ namespace MirrorTools
                     if (parametersCount > 0 && parts.Length <= parametersCount)
                     {
                         int offset = hasSenderParameter && parts.Length > index ? 0 : 1;
-                        return $"{input}{parameters[parts.Length - offset].Name}({GetTypeName(parameters[parts.Length - offset].ParameterType)})";
+                        
+                        ParameterInfo parameter = parameters[parts.Length - offset];
+                        
+                        return $"{input}{parameters[parts.Length - offset].Name}({GetTypeName(parameter.ParameterType)})";
                     }
                 }
             }
