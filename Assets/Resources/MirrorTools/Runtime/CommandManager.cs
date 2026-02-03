@@ -150,14 +150,18 @@ namespace MirrorTools
                     continue;
                 }
 
+                string targetPart = commandParts[i + offset];
+                targetPart = targetPart.Replace("\"", "");
+                targetPart = targetPart.Replace("'", "");
+
                 switch (parameters[i].ParameterType)
                 {
                     case { } t when t == typeof(bool):
-                        if (bool.TryParse(commandParts[i + offset], out bool b)) result.Add(b);
+                        if (bool.TryParse(targetPart, out bool b)) result.Add(b);
                         else return false;
                         break;
                     case { } t when t == typeof(int):
-                        if (int.TryParse(commandParts[i + offset], out int _i)) result.Add(_i);
+                        if (int.TryParse(targetPart, out int _i)) result.Add(_i);
                         else return false;
                         break;
                     case { } t when t == typeof(float):
@@ -165,17 +169,17 @@ namespace MirrorTools
                         else return false;
                         break;
                     case { } t when t == typeof(NetworkIdentity):
-                        if (TryParseNetIdentity(commandParts[i + offset], out NetworkIdentity identity))
+                        if (TryParseNetIdentity(targetPart, out NetworkIdentity identity))
                             result.Add(identity);
                         else return false;
                         break;
                     case { } t when t == typeof(NetworkConnectionToClient):
-                        if (TryParseNetworkConnection(commandParts[i + offset], out NetworkConnectionToClient conn))
+                        if (TryParseNetworkConnection(targetPart, out NetworkConnectionToClient conn))
                             result.Add(conn);
                         else return false;
                         break;
                     case { } t when t == typeof(string):
-                        result.Add(commandParts[i + offset]);
+                        result.Add(targetPart);
                         break;
                 }
             }
@@ -229,7 +233,7 @@ namespace MirrorTools
                     if (i > startIndex)
                     {
                         string part = input.Substring(startIndex, i - startIndex);
-                        parts.Add(RemoveOuterQuotes(part));
+                        parts.Add(part);
                     }
 
                     startIndex = i + 1;
@@ -239,20 +243,10 @@ namespace MirrorTools
             if (startIndex < input.Length)
             {
                 string lastPart = input.Substring(startIndex);
-                parts.Add(RemoveOuterQuotes(lastPart));
+                parts.Add(lastPart);
             }
 
             return parts.ToArray();
-        }
-
-        private static string RemoveOuterQuotes(string text)
-        {
-            if (text.Length >= 2 && (text[0] == '"' || text[0] == '\'') && text[0] == text[^1])
-            {
-                return text.Substring(1, text.Length - 2);
-            }
-
-            return text;
         }
 
         private static bool TryParseFloat(string input, out float result)
@@ -338,14 +332,15 @@ namespace MirrorTools
 
         public static string RemoveLastPart(string input)
         {
-            if (input[^1] == ' ') return input;
+            if (input.Length < 1 || input[^1] == ' ') return input;
             
             string[] parts = SplitString(input);
             return input.Remove(input.Length - parts[^1].Length);
         }
 
-        public static string[] GetListSuggestions(string input, int maxCount, bool inputChanged)
+        public static string[] GetListSuggestions(string input, int maxCount, out string header, bool inputChanged)
         {
+            header = "";
             if (string.IsNullOrEmpty(input)) return null;
             
             string[] parts = SplitString(input);
@@ -355,6 +350,7 @@ namespace MirrorTools
                 var matches = commands.Keys.Where(cmd => cmd.StartsWith(input)).Reverse().ToList();
                 if (matches.Count > 0)
                 {
+                    if (matches.Count == 1 && matches[0] == input) return null;
                     int range = matches.Count < maxCount ? matches.Count : maxCount;
                     return matches.GetRange(0, range).ToArray();
                 }
@@ -377,9 +373,12 @@ namespace MirrorTools
                     
                     ParameterInfo parameter = parameters[fullParts - offset];
 
+                    header = $"<{parameter.Name}>[{GetTypeName(parameter.ParameterType)}]";
+
                     if (parameter.ParameterType == typeof(bool))
                     {
-                        if (input[^1] == ' ') return new string[] { "false", "true" };
+                        if (parts[^1] == "true" || parts[^1] == "false") return null;
+                        else if (input[^1] == ' ') return new string[] { "false", "true" };
                         else if (parts[^1].StartsWith("t")) return new string[] { "true" };
                         else if (parts[^1].StartsWith("f")) return new string[] { "false" };
                         else return null;
@@ -414,50 +413,17 @@ namespace MirrorTools
 
             if (input[^1] == ' ')
             {
-                var identityList = array.Reverse().ToList();
-                int range = identityList.Count < maxCount ? identityList.Count : maxCount;
-                return identityList.GetRange(0, range).ToArray();
+                var list = array.Reverse().ToList();
+                int range = list.Count < maxCount ? list.Count : maxCount;
+                return list.GetRange(0, range).ToArray();
             }
             else
             {
-                var identityList = array.Where(id => id.StartsWith(parts[^1]))
-                    .Reverse().ToList();
-                int range = identityList.Count < maxCount ? identityList.Count : maxCount;
-                return identityList.GetRange(0, range).ToArray();
+                var list = array.Where(id => id.StartsWith(parts[^1])).Reverse().ToList();
+                if (list.Count == 0 || list[0] == parts[^1]) return null;
+                int range = list.Count < maxCount ? list.Count : maxCount;
+                return list.GetRange(0, range).ToArray();
             }
-        }
-
-        public static string GetSuggestion(string input)
-        {
-            if (string.IsNullOrEmpty(input)) return string.Empty;
-
-            string[] parts = SplitString(input);
-
-            if (parts.Length == 1 && input[^1] != ' ')
-            {
-                var matches = commands.Keys.Where(cmd => cmd.StartsWith(input)).ToList();
-                if (matches.Count > 0) return matches[0];
-                else return string.Empty;
-            }
-            else if (parts.Length > 0 && input[^1] == ' ')
-            {
-                if (commands.ContainsKey(parts[0]))
-                {
-                    ParameterInfo[] parameters = commands[parts[0]].methodInfo.GetParameters();
-                    bool hasSenderParameter = MethodHasSenderParameter(parameters, out int index);
-                    int parametersCount = hasSenderParameter ? parameters.Length - 1 : parameters.Length;
-                    if (parametersCount > 0 && parts.Length <= parametersCount)
-                    {
-                        int offset = hasSenderParameter && parts.Length > index ? 0 : 1;
-                        
-                        ParameterInfo parameter = parameters[parts.Length - offset];
-                        
-                        return $"{input}{parameters[parts.Length - offset].Name}({GetTypeName(parameter.ParameterType)})";
-                    }
-                }
-            }
-
-            return string.Empty;
         }
 
         private static bool MethodHasSenderParameter(ParameterInfo[] parameters, out int index)

@@ -44,19 +44,13 @@ namespace MirrorTools
 
         private void OnInputChanged(string input)
         {
-            string[] suggestions = CommandManager.GetListSuggestions(input, suggestionPanel.elementsCount, true);
+            string[] suggestions = CommandManager.GetListSuggestions(input, suggestionPanel.elementsCount, out string header, true);
+            spacingText.text = CommandManager.RemoveLastPart(input).Replace(" ", "/");
+            suggestionPanel.gameObject.SetActive(true);
+            suggestionPanel.SetNewList(suggestions, header);
             if (suggestions != null)
-            {
-                spacingText.text = CommandManager.RemoveLastPart(input).Replace(" ", "/");
-                suggestionPanel.gameObject.SetActive(true);
-                suggestionPanel.SetNewList(suggestions);
                 placeHolder.text = CommandManager.RemoveLastPart(input) + suggestionPanel.GetCurrentSuggestion();
-            }
-            else
-            {
-                suggestionPanel.gameObject.SetActive(false);
-                placeHolder.text = "";
-            }
+            else placeHolder.text = "";
             
             MainPanel.singleton.StartCoroutine(CheckOnIncorrectInput(input));
         }
@@ -65,14 +59,11 @@ namespace MirrorTools
         {
             if (!gameObject.activeSelf) return;
             
-            string[] suggestions = CommandManager.GetListSuggestions(inputField.text, suggestionPanel.elementsCount, false);
-            if (suggestions != null)
-            {
-                spacingText.text = CommandManager.RemoveLastPart(inputField.text).Replace(" ", "/");
-                suggestionPanel.gameObject.SetActive(true);
-                suggestionPanel.SetNewList(suggestions);
-                placeHolder.text = CommandManager.RemoveLastPart(inputField.text) + suggestionPanel.GetCurrentSuggestion();
-            }
+            string[] suggestions = CommandManager.GetListSuggestions(inputField.text, suggestionPanel.elementsCount, out string header, false);
+            spacingText.text = CommandManager.RemoveLastPart(inputField.text).Replace(" ", "/");
+            suggestionPanel.gameObject.SetActive(true);
+            suggestionPanel.SetNewList(suggestions, header);
+            placeHolder.text = CommandManager.RemoveLastPart(inputField.text) + suggestionPanel.GetCurrentSuggestion();
         }
 
         IEnumerator CheckOnIncorrectInput(string input)
@@ -124,7 +115,7 @@ namespace MirrorTools
 
         private void OnUpArrowPressed()
         {
-            if (suggestionPanel.gameObject.activeSelf)
+            if (suggestionPanel.IsActive())
             {
                 suggestionPanel.NextSuggestion();
                 placeHolder.text = CommandManager.RemoveLastPart(inputField.text) + suggestionPanel.GetCurrentSuggestion();
@@ -135,7 +126,7 @@ namespace MirrorTools
 
         private void OnDownArrowPressed()
         {
-            if (suggestionPanel.gameObject.activeSelf)
+            if (suggestionPanel.IsActive())
             { 
                 suggestionPanel.PreviousSuggestion();
                 placeHolder.text = CommandManager.RemoveLastPart(inputField.text) + suggestionPanel.GetCurrentSuggestion();
