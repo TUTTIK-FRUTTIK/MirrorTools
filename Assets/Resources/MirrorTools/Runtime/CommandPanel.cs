@@ -30,19 +30,21 @@ namespace MirrorTools
             }
             
             inputField.onValueChanged.AddListener(OnInputChanged);
-            NetidentitiesManager.onIdentitiesInfoResponse += OnNetIdentitiesResponse;
+            NetidentitiesManager.onIdentitiesInfoResponse += OnDataResponse;
+            PlayersManager.onPlayersInfoResponse += OnDataResponse;
 
             suggestionPanel.Initialize();
         }
 
         private void OnDestroy()
         {
-            NetidentitiesManager.onIdentitiesInfoResponse -= OnNetIdentitiesResponse;
+            NetidentitiesManager.onIdentitiesInfoResponse -= OnDataResponse;
+            PlayersManager.onPlayersInfoResponse -= OnDataResponse;
         }
 
         private void OnInputChanged(string input)
         {
-            string[] suggestions = CommandManager.GetListSuggestions(input, suggestionPanel.elementsCount);
+            string[] suggestions = CommandManager.GetListSuggestions(input, suggestionPanel.elementsCount, true);
             if (suggestions != null)
             {
                 spacingText.text = CommandManager.RemoveLastPart(input).Replace(" ", "/");
@@ -59,27 +61,18 @@ namespace MirrorTools
             MainPanel.singleton.StartCoroutine(CheckOnIncorrectInput(input));
         }
 
-        [ConsoleCommand("test1")]
-        public static void Test1(NetworkConnectionToClient sender, bool boolean) {MTools.ConsoleWrite(sender, boolean.ToString());}
-        
-        [ConsoleCommand("test2")]
-        public static void Test2() {}
-        
-        [ConsoleCommand("test3")]
-        public static void Test3() {}
-        
-        [ConsoleCommand("te")]
-        public static void Te() {}
-        
-        [ConsoleCommand("try_test")]
-        public static void TryTest() {}
-
-        private void OnNetIdentitiesResponse()
+        private void OnDataResponse()
         {
             if (!gameObject.activeSelf) return;
             
-            // вызов CommandManager.GetListSuggestion()
-            //foreach(var name in NetidentitiesManager.netIdentities) Debug.Log(name);
+            string[] suggestions = CommandManager.GetListSuggestions(inputField.text, suggestionPanel.elementsCount, false);
+            if (suggestions != null)
+            {
+                spacingText.text = CommandManager.RemoveLastPart(inputField.text).Replace(" ", "/");
+                suggestionPanel.gameObject.SetActive(true);
+                suggestionPanel.SetNewList(suggestions);
+                placeHolder.text = CommandManager.RemoveLastPart(inputField.text) + suggestionPanel.GetCurrentSuggestion();
+            }
         }
 
         IEnumerator CheckOnIncorrectInput(string input)
@@ -134,7 +127,7 @@ namespace MirrorTools
             if (suggestionPanel.gameObject.activeSelf)
             {
                 suggestionPanel.NextSuggestion();
-                placeHolder.text = suggestionPanel.GetCurrentSuggestion();
+                placeHolder.text = CommandManager.RemoveLastPart(inputField.text) + suggestionPanel.GetCurrentSuggestion();
                 inputField.caretPosition = inputField.text.Length;
             }
             else OpenHistoryCommand(true);
@@ -143,9 +136,9 @@ namespace MirrorTools
         private void OnDownArrowPressed()
         {
             if (suggestionPanel.gameObject.activeSelf)
-            {
+            { 
                 suggestionPanel.PreviousSuggestion();
-                placeHolder.text = suggestionPanel.GetCurrentSuggestion();
+                placeHolder.text = CommandManager.RemoveLastPart(inputField.text) + suggestionPanel.GetCurrentSuggestion();
                 inputField.caretPosition = inputField.text.Length;
             }
             else OpenHistoryCommand(false);

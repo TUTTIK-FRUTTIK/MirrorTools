@@ -344,7 +344,7 @@ namespace MirrorTools
             return input.Remove(input.Length - parts[^1].Length);
         }
 
-        public static string[] GetListSuggestions(string input, int maxCount)
+        public static string[] GetListSuggestions(string input, int maxCount, bool inputChanged)
         {
             if (string.IsNullOrEmpty(input)) return null;
             
@@ -367,25 +367,64 @@ namespace MirrorTools
                 ParameterInfo[] parameters = commands[parts[0]].methodInfo.GetParameters();
                 bool hasSenderParameter = MethodHasSenderParameter(parameters, out int index);
                 int parametersCount = hasSenderParameter ? parameters.Length - 1 : parameters.Length;
-                Debug.Log(parametersCount.ToString());
+                
                 if (parametersCount > 0)
                 {
                     int offset = hasSenderParameter && parts.Length > index ? 0 : 1;
-                        
-                    ParameterInfo parameter = parameters[parts.Length - offset];
+                    int fullParts = input[^1] == ' ' ? parts.Length : parts.Length - 1;
                     
-                    Debug.Log(parameter.ParameterType.ToString());
+                    if (fullParts - 1 >= parametersCount) return null;
+                    
+                    ParameterInfo parameter = parameters[fullParts - offset];
 
-                    if (parameter.ParameterType == typeof(bool)) return new string[] { "false", "true" };
+                    if (parameter.ParameterType == typeof(bool))
+                    {
+                        if (input[^1] == ' ') return new string[] { "false", "true" };
+                        else if (parts[^1].StartsWith("t")) return new string[] { "true" };
+                        else if (parts[^1].StartsWith("f")) return new string[] { "false" };
+                        else return null;
+                    }
+                    else if (parameter.ParameterType == typeof(NetworkConnectionToClient))
+                    {
+                        if (input[^1] == ' ' && inputChanged)
+                        {
+                            PlayersManager.ClearPlayerNames();
+                            PlayersManager.RequestPlayerNames();
+                        }
                         
-                    if (parameter.ParameterType == typeof(NetworkConnectionToClient)) PlayersManager.RequestPlayersInfo();
-                    else if (parameter.ParameterType == typeof(NetworkIdentity)) NetidentitiesManager.RequestIdentitiesInfo();
+                        return GetSuggestionsFromArray(PlayersManager.players, input, maxCount, parts);
+                    }
+                    else if (parameter.ParameterType == typeof(NetworkIdentity))
+                    {
+                        if (input[^1] == ' ' && inputChanged) NetidentitiesManager.RequestIdentitiesInfo();
+                        
+                        return GetSuggestionsFromArray(NetidentitiesManager.netIdentities, input, maxCount, parts);
+                    }
 
                     return null;
                 }
             }
 
             return null;
+        }
+
+        private static string[] GetSuggestionsFromArray(string[] array, string input, int maxCount, string[] parts)
+        {
+            if (array == null || array.Length == 0) return null;
+
+            if (input[^1] == ' ')
+            {
+                var identityList = array.Reverse().ToList();
+                int range = identityList.Count < maxCount ? identityList.Count : maxCount;
+                return identityList.GetRange(0, range).ToArray();
+            }
+            else
+            {
+                var identityList = array.Where(id => id.StartsWith(parts[^1]))
+                    .Reverse().ToList();
+                int range = identityList.Count < maxCount ? identityList.Count : maxCount;
+                return identityList.GetRange(0, range).ToArray();
+            }
         }
 
         public static string GetSuggestion(string input)
