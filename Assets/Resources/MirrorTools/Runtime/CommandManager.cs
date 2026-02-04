@@ -82,11 +82,40 @@ namespace MirrorTools
                         continue;
                     }
 
+                    bool supportedMethod = true;
+
+                    foreach (var parameter in method.GetParameters())
+                    {
+                        if (!IsSupportedParameter(parameter))
+                        {
+                            Debug.LogError($"Method {method.Name} has unsupported parameter: {parameter.ParameterType}");
+                            supportedMethod = false;
+                            break;
+                        }
+                    }
+                    
+                    if (!supportedMethod) continue;
+
                     commands[commandName] = new CommandData(attribute.description, method, type);
                 }
             }
         }
 
+        private static bool IsSupportedParameter(ParameterInfo parameter)
+        {
+            var type = parameter.ParameterType;
+
+            if (type == typeof(bool)) return true;
+            if (type == typeof(int)) return true;
+            if (type == typeof(float)) return true;
+            if (type == typeof(string)) return true;
+            if (type == typeof(NetworkIdentity)) return true;
+            if (type == typeof(NetworkConnectionToClient)) return true;
+            if (type.IsEnum) return true;
+            
+            return false;
+        }
+        
         public static bool CommandHasError(string command, out string exception)
         {
             exception = "";
@@ -176,6 +205,10 @@ namespace MirrorTools
                     case { } t when t == typeof(NetworkConnectionToClient):
                         if (TryParseNetworkConnection(targetPart, out NetworkConnectionToClient conn))
                             result.Add(conn);
+                        else return false;
+                        break;
+                    case { } t when t.IsEnum:
+                        if (Enum.TryParse(t, targetPart, out object enumValue)) result.Add(enumValue);
                         else return false;
                         break;
                     case { } t when t == typeof(string):
@@ -398,6 +431,10 @@ namespace MirrorTools
                         if (input[^1] == ' ' && inputChanged) NetidentitiesManager.RequestIdentitiesInfo();
                         
                         return GetSuggestionsFromArray(NetidentitiesManager.netIdentities, input, maxCount, parts);
+                    }
+                    else if (parameter.ParameterType.IsEnum)
+                    {
+                        return GetSuggestionsFromArray(Enum.GetNames(parameter.ParameterType), input, maxCount, parts);
                     }
 
                     return null;
