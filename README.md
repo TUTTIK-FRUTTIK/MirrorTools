@@ -16,7 +16,12 @@ Mirror Tools has 5 modules! Each module is a separate tool that allows you to ge
 * Log module - server-side user logging and log history.
 * Command Console module - a command console that allows you to execute any code on the server side.
 
-### Getting Started
+## Requirements
+
+- Unity **2019** or higher
+- Works with both **Legacy Input Manager** and **New Input System**
+
+## Getting Started
 
 Get Unity, [download Mirror](https://assetstore.unity.com/packages/tools/network/mirror-129321), import our unitypackage & press play!&#x20;
 
@@ -24,15 +29,15 @@ By pressing the "\~" key You will be able to open the control panel. Enjoy!
 
 
 
-### How To Use
+## How To Use
 
-#### Password
+### Password
 
 You can force the server to require a password from users before opening the control panel to them. To set a password, open the Assets/Resources/MirrorTools/Config/MainConfig file and change the password in the inspector.
 
 After the client enters the correct password, it will be saved in the client's local storage, so that when the control panel is reopened, the client does not have to enter the password again.
 
-#### General module
+### General module
 
 All the indicators are described here and what they mean.
 
@@ -44,16 +49,16 @@ All the indicators are described here and what they mean.
 * Memory usage - the amount of RAM that Unity Application uses out of all available RAM on the computer.
 * Tickrate - actual tickrate (current fps on server) and sendrate is set in NetworkManager settings.
 
-#### Players module
+### Players module
 
 You can display other information about the players that you would like to see on this panel (for example, nicknames, number of coins, etc.).\
 To do this, it is enough to create an instance of the `ConnectionData` class and assign its `displayedInfo` field the desired value. After that, you must assign the newly created instance of the class to the client's `conn.authenticatedData` field.
 
-#### Log module
+### Log module
 
 Use the `MTools.Log()` method to write a log in the logging panel. This method can only be called on the server side!
 
-#### Command Console module
+### Command Console module
 
 Command Console has command history and autocomplete.&#x20;
 
@@ -91,5 +96,6 @@ List of supported parameter types for methods with the \[ConsoleCommand] attribu
 * bool
 * int
 * float
+* enum
 * NetworkIdentity (name of gameobject)
 * NetworkConnectionToClient (connId or ConnectionData.name)
